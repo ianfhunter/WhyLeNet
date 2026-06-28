@@ -6,6 +6,8 @@
 
 In which we put LeNets inside our LeNet. Every Neuron is a LeNet.
 
+This is true "Lenet in Lenet" unlike papers like ResNet in ResNet which are deceptively named (https://arxiv.org/abs/1603.08029)
+
 Of course, this poses some problems: 
 
 ## The Input and Output of Lenet are not neurons

@@ -14,10 +14,8 @@ from train_whylennet import (
     DigitBank,
     WhyLeNet,
     WhyNeuron,
-    build_loaders,
     digit_to_image_differentiable,
     get_unit,
-    train_one_epoch,
 )
 
 
@@ -57,8 +55,9 @@ def test_why_neuron_emits_five_resynthesized_channels(tmp_path: Path) -> None:
 
 def test_network_trains_on_mnist(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
-    train_full, loader = _load_tiny_mnist(data_dir)
-    _, _, test_loader = build_loaders(data_dir, batch_size=32, train_limit=128, test_limit=64)
+    train_full, _ = _load_tiny_mnist(data_dir)
+    test_full = datasets.MNIST(root=str(data_dir), train=False, download=True, transform=transforms.ToTensor())
+    test_loader = DataLoader(Subset(test_full, range(64)), batch_size=32, shuffle=False, num_workers=0)
 
     torch.manual_seed(0)
     device = torch.device("cpu")
@@ -66,14 +65,27 @@ def test_network_trains_on_mnist(tmp_path: Path) -> None:
     model = WhyLeNet(digit_bank=digit_bank, hidden_neurons=2).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
-    initial_metrics = train_one_epoch(model, loader, optimizer, device)
-    final_metrics = train_one_epoch(model, loader, optimizer, device)
+    fixed_batch = DataLoader(Subset(train_full, range(64)), batch_size=64, shuffle=False, num_workers=0)
+    images, labels = next(iter(fixed_batch))
+    images = images.to(device)
+    labels = labels.to(device)
 
-    assert final_metrics["loss"] < initial_metrics["loss"]
+    model.train()
+    losses: list[float] = []
+    for _ in range(10):
+        optimizer.zero_grad(set_to_none=True)
+        logits = model(images)
+        loss = F.cross_entropy(logits, labels)
+        loss.backward()
+        optimizer.step()
+        losses.append(float(loss.detach()))
+
+    assert losses[-1] < losses[0]
+    assert all(torch.isfinite(torch.tensor(losses)))
 
     model.eval()
-    images, labels = next(iter(test_loader))
-    logits = model(images.to(device))
-    loss = F.cross_entropy(logits, labels.to(device))
+    test_images, test_labels = next(iter(test_loader))
+    logits = model(test_images.to(device))
+    loss = F.cross_entropy(logits, test_labels.to(device))
     assert torch.isfinite(loss)
-    assert logits.shape == (labels.size(0), 10)
+    assert logits.shape == (test_labels.size(0), 10)

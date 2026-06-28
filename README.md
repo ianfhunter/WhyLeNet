@@ -29,13 +29,31 @@ Future research could look at 8bit variants which would reduce our LeNets by 2.
 For each neuron, we replace with: 
 
 ```python
+
+DIGIT_BANK = load_mnist_clearest_images() 
+DIGITS = torch.arange(10, dtype=torch.float32) # [0, 1, 2, ..., 9]
+
+def digitToImageDifferentiable(prob_distribution):
+    """
+    Takes a 10-dimensional probability vector and blends the Digit Bank.
+    Input shape: [Batch, 10]
+    Output shape: [Batch, 1, 28, 28] (A clean or ghosted handwritten image)
+    """
+    # Einstein summation performs the smooth, continuous matrix blend
+    return torch.einsum('bi,ichw->bchw', prob_distribution, DIGIT_BANK
+
+)
 def WhyLeNetNeuronPartial(value):
    value = digitToImage(value)
    v = conv2d(value)
    v = maxpool(value)
    # etc
-   # v = softmax(v) not required 
-   return max_idx(v)
+   v = softmax(v) # maybe not required?
+   # v = argmax(v)
+   # we can't use argmax because it will kill the gradient descent. but by doing some math, the below should operate similarly: 
+   v = torch.sum(v * DIGITS.to(logits.device), dim=-1)
+    
+   return v
 
 
 def WhyLenNetNeuron(v,w,x,y,z): 
@@ -45,6 +63,36 @@ def WhyLenNetNeuron(v,w,x,y,z):
    d = WhyLeNetNeuronPartial("Tenths")
    e = WhyLeNetNeuronPartial("Hundreths")
    N = (100 * a) + (10 * b) + (1 * c) + (0.1 * d) + (0.01 * e)
+
+   dist_a = get_unit(N, 100)
+   dist_a = get_unit(N, 10)
+   dist_a = get_unit(N, 1)
+   dist_a = get_unit(N, .1)
+   dist_a = get_unit(N, .01)
+
+   # Re-synthesize 5 BRAND NEW handwritten 28x28 images using your einsum trick
+    img_a = digitToImageDifferentiable(dist_a)
+    img_b = digitToImageDifferentiable(dist_b)
+    img_c = digitToImageDifferentiable(dist_c)
+    img_d = digitToImageDifferentiable(dist_d)
+    img_e = digitToImageDifferentiable(dist_e)
+    
+    # Stack them together into a 5-channel image block [Batch, 5, 28, 28]
+    output_images = torch.cat([img_a, img_b, img_c, img_d, img_e], dim=1)
+    
+    # Return BOTH the images for the next hidden layer, and N for tracking/final loss
+    return output_images, N
+
    return N
+
+def WhyFC():
+   # To-do 
+
+def WhyLenet(inputimg):
+   # Todo : convs, etc
+   a = Conv(inputimg)
+   a = ....
+   a = WhyFC()
+   return a
 
 ```

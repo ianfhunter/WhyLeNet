@@ -28,7 +28,7 @@ Future research could look at 8bit variants which would reduce our LeNets by 2.
 
 For each neuron, we replace with: 
 
-```
+```python
 def WhyLeNetNeuronPartial(value):
    value = digitToImage(value)
    v = conv2d(value)

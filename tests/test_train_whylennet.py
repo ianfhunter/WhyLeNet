@@ -12,6 +12,7 @@ from torchvision import datasets, transforms
 from train_whylennet import (
     POSITION_WEIGHTS,
     DigitBank,
+    WhyFC,
     WhyLeNet,
     WhyNeuron,
     digit_to_image_differentiable,
@@ -51,6 +52,15 @@ def test_why_neuron_emits_five_resynthesized_channels(tmp_path: Path) -> None:
     assert n.shape == (2, 1)
     assert torch.isfinite(output_images).all()
     assert torch.isfinite(n).all()
+
+
+def test_why_fc_reads_resynthesized_images(tmp_path: Path) -> None:
+    train_full, _ = _load_tiny_mnist(tmp_path / "data")
+    digit_bank = DigitBank(train_full)
+    hidden_neurons = 2
+    images = torch.randn(3, hidden_neurons * len(POSITION_WEIGHTS), 28, 28)
+    logits = WhyFC(hidden_neurons * len(POSITION_WEIGHTS))(images)
+    assert logits.shape == (3, 10)
 
 
 def test_network_trains_on_mnist(tmp_path: Path) -> None:

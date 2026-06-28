@@ -96,3 +96,26 @@ def WhyLenet(inputimg):
    return a
 
 ```
+
+note we must make the get unit differentiable too:
+
+```Python
+def get_unit(unit_scalar, position_weight):
+    """
+    Differentiable unit extraction.
+    If position_weight is 10, it extracts the tens place from N.
+    """
+    # 1. Isolate the target single digit (e.g., if N=42.15, for weight 10, target is 4.215)
+    # We use a soft shift rather than hard modulo math
+    target_digit = unit_scalar 
+    
+    # 2. Compute absolute distance to each of the 10 static digit possibilities [0..9]
+    distances = torch.abs(target_digit.unsqueeze(-1) - DIGITS.to(unit_scalar.device))
+    
+    # 3. Softmin turns closest distance into the highest probability distribution
+    # The scaling factor (10.0) controls how strictly sharp the resulting digit lookups are
+    prob_distribution = torch.softmax(-distances * 10.0, dim=-1)
+    
+    return prob_distribution
+
+```

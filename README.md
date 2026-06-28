@@ -8,6 +8,8 @@ In which we put LeNets inside our LeNet. Every Neuron is a LeNet.
 
 This is true "Lenet in Lenet" unlike papers like ResNet in ResNet which are deceptively named (https://arxiv.org/abs/1603.08029)
 
+Note: we use LeNet-1 instead of Lenet-5 as it will be 2,578 instead of 60,000 parameters
+
 Of course, this poses some problems: 
 
 ## The Input and Output of Lenet are not neurons
